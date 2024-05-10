@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Parent Page</title>
+<script>
+
+/*
+
+Then pass into prompt to cleanup?
+Inject the inner-inclusion.js script into the inner.html how?
+--
+full css selector: ${0}
+Please clean it up, such that it still is fully clear what element is referred to, for a human, but without noise like styling things etc, BUT KEEP relevant things that sound like names, ie. keep .searchButton, remove .2xl, etc
+
+*/
+
+const get_iframe = ()=> document.getElementById('myIframe')
+const iframe_origin = window.location.origin
+const editor_origin = window.location.origin
+const on_message = (event) => {
+	if (event.origin !== iframe_origin) {return}
+	const data = event.data
+	if (data.kind === 'ready') {
+		const iframe_container = document.querySelector('.iframe-container')
+		iframe_container.classList.add('show-overlay')
+		iframe_container.addEventListener('mousemove', event=> {
+			const pos = {x: event.offsetX, y: event.offsetY}
+			do_message({kind: 'hover', pos})
+		})
+		iframe_container.addEventListener('click', event=> {
+			iframe_container.classList.remove('show-overlay')
+			// pos in overlay, not in client
+			const pos = {x: event.offsetX, y: event.offsetY}
+			do_message({kind: 'click', pos})
+		})
+
+		do_message({kind: 'yay'})
+	} else if (data.kind === 'clicked') {
+		const result = document.querySelector('.result')
+		result.innerHTML = ''
+		result.textContent = data.css_selector+'\n'+data.xpath+'\n'
+		let button
+		result.appendChild(button = document.createElement('button'))
+		button.textContent = 'go again'
+		button.addEventListener('click', event=> {
+			const iframe_container = document.querySelector('.iframe-container')
+			iframe_container.classList.add('show-overlay')
+		})
+	} else if (data.kind === 'bounds') {
+		const marker = document.querySelector('.marker')
+		marker.style.left = data.bounds.x + 'px'
+		marker.style.top = data.bounds.y + 'px'
+		marker.style.width = data.bounds.width + 'px'
+		marker.style.height = data.bounds.height + 'px'
+	}
+}
+const do_message = (data) => {
+	const iframe = get_iframe()
+	if (!iframe) {return}
+	iframe.contentWindow.postMessage(data, iframe_origin)
+}
+window.addEventListener('message', on_message, false)
+
+</script>
+<style>
+
+.iframe-container {
+	position: relative;
+	width: 300px;
+	height: 200px;
+	border: 1px solid black;
+}
+.overlay {
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	background-color: rgba(0, 0, 0, 0.5);
+	pointer-events: none;
+	opacity: 0;
+	transition: opacity 0.1s;
+}
+.iframe-container.show-overlay .overlay {
+	pointer-events: all;
+	opacity: 1;
+}
+.marker {
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 0px;
+	height: 0px;
+	background-color: rgba(0, 70, 255, 0.5);
+	border: 3px dashed blue;
+	pointer-events: none;
+}
+
+</style>
+</head>
+<body>
+    <h1>Parent Page</h1>
+		<div class="iframe-container">
+			<iframe id="myIframe" src="inner.html" width="300" height="200"></iframe>
+			<div class="overlay">
+				<div class="marker"></div>
+			</div>
+		</div>
+		<pre class="result"></pre>
+</body>
+</html>
